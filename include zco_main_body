@@ -1,0 +1,700 @@
+
+FORM get_data .
+
+*--------------------------------------MATDOC محاسبه دوره و سال از
+  CLEAR itab_period.
+  SELECT md~gjahr, md~gjper
+    FROM matdoc AS md
+    INTO CORRESPONDING FIELDS OF TABLE @itab_period
+    WHERE
+          bukrs IN @s_bukrs
+      AND werks IN @s_werks
+      AND matnr IN @s_matnr
+      AND budat IN @s_budat
+    GROUP BY md~gjahr, md~gjper.
+
+  IF sy-subrc = 0.
+    SORT itab_period BY gjahr gjper.
+    PERFORM change_period.
+  ELSE.
+    MESSAGE 'کاردکس کالا خالي مي باشد' TYPE 'E'.
+  ENDIF.
+
+
+*----------------------از پارامتر ورودي Fiscal Year , Period  بدست آوردن
+
+  TYPES: BEGIN OF stru_fisc_per,
+           budat TYPE matdoc-budat, "posting date
+           gjahr TYPE bkpf-gjahr,   "Fiscal Year
+           monat TYPE bkpf-monat,   "Period
+           poper TYPE t009b-poper,
+         END OF stru_fisc_per.
+
+  DATA: wa_year TYPE stru_fisc_per.
+  DATA: wa_bukrs TYPE t001.
+
+  SELECT SINGLE * INTO wa_bukrs FROM t001 WHERE bukrs IN s_bukrs.
+
+  CALL FUNCTION 'FI_PERIOD_DETERMINE'
+    EXPORTING
+      i_budat = s_budat-low
+      i_bukrs = wa_bukrs-bukrs
+    IMPORTING
+      e_gjahr = wa_year-gjahr
+      e_monat = wa_year-monat
+      e_poper = wa_year-poper.
+
+
+*------------------------------------- بدست آوردن اطلاعات پايه گزارش
+
+  CLEAR itab_base.
+  SELECT mc~matnr, mr~zmaktx_fa, mk~maktx, mc~werks, tk~bukrs,
+         mr~meins, mb~stprs, mb~bklas, mb~vprsv, mb~verpr,
+         mc~beskz, mc~sobsl, tw~bwkey, md~waers, mr~mtart
+    FROM marc AS mc
+      LEFT JOIN makt AS mk ON mk~matnr EQ mc~matnr AND mk~spras EQ 'E'
+      LEFT JOIN mara  AS mr ON mr~matnr EQ mc~matnr
+      LEFT JOIN t001w AS tw ON tw~werks EQ mc~werks
+      INNER JOIN mbew  AS mb ON mb~matnr EQ mc~matnr AND mb~bwkey EQ tw~bwkey
+      LEFT JOIN t001k AS tk ON tk~bwkey EQ tw~bwkey
+      INNER JOIN matdoc AS md ON md~matnr EQ mc~matnr AND md~werks EQ mc~werks
+    INTO CORRESPONDING FIELDS OF TABLE @itab_base
+    WHERE
+          tk~bukrs IN @s_bukrs
+      AND mc~werks IN @s_werks
+      AND mc~matnr IN @s_matnr
+      AND mr~mtart IN @s_mtart
+      AND mc~beskz IN @s_beskz
+      AND mr~mtart NOT IN ('ZTEC', 'ZTRA')
+    GROUP BY mc~matnr, mr~zmaktx_fa, mk~maktx, mc~werks, tk~bukrs,
+             mr~meins, mb~stprs, mb~bklas, mb~vprsv, mb~verpr,
+             mc~beskz, mc~sobsl, tw~bwkey, md~waers, mr~mtart.
+
+
+  IF sy-subrc = 0.
+    SORT itab_base BY bukrs werks matnr.
+  ELSE.
+  ENDIF.
+
+  LOOP AT itab_base ASSIGNING FIELD-SYMBOL(<s>).
+    IF <s>-vprsv = 'S'.
+      CLEAR <s>-verpr.
+    ELSEIF <s>-vprsv = 'V'.
+      CLEAR <s>-stprs.
+    ENDIF.
+  ENDLOOP.
+
+*---------------------------------------------------اول دوره
+
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS stock_qty
+    FROM matdoc AS md
+      INTO CORRESPONDING FIELDS OF TABLE @it_avale_do
+    WHERE md~budat < @s_budat-low
+      AND md~bukrs IN @s_bukrs
+      AND md~werks IN @s_werks
+      AND md~matnr IN @s_matnr
+      AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+    GROUP BY md~bukrs, md~werks, md~matnr.
+
+  LOOP AT itab_base ASSIGNING FIELD-SYMBOL(<f>).
+    READ TABLE it_avale_do WITH KEY bukrs = <f>-bukrs werks = <f>-werks matnr = <f>-matnr.
+    IF sy-subrc = 0.
+      <f>-avale_dore = it_avale_do-stock_qty.
+    ENDIF.
+  ENDLOOP.
+
+
+*-------------------------------------------محاسبات دوره اي
+*---------------------------------------------------------------خريد
+  SELECT md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper, SUM( md~stock_qty ) AS stock_qty
+      FROM matdoc AS md
+        INTO CORRESPONDING FIELDS OF TABLE @it_kharid
+      WHERE md~bwart IN (101, 102, 105, 106, 122, 123, 161, 162)
+      AND md~bukrs IN @s_bukrs
+      AND md~werks IN @s_werks
+      AND md~matnr IN @s_matnr
+  GROUP BY md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper.
+*--------------------------------------------------------------مصرف
+  SELECT md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper, SUM( md~stock_qty ) AS stock_qty
+      FROM matdoc AS md
+        INTO CORRESPONDING FIELDS OF TABLE @it_masraf
+      WHERE md~bwart IN (201, 202, 261, 262, 543, 544)
+      AND md~bukrs IN @s_bukrs
+      AND md~werks IN @s_werks
+      AND md~matnr IN @s_matnr
+  GROUP BY md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper.
+*--------------------------------------------------------------فروش
+  SELECT md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper, SUM( md~stock_qty ) AS stock_qty
+      FROM matdoc AS md
+        INTO CORRESPONDING FIELDS OF TABLE @it_foroosh
+      WHERE md~bwart IN (601, 602, 653, 654)
+      AND md~bukrs IN @s_bukrs
+      AND md~werks IN @s_werks
+      AND md~matnr IN @s_matnr
+  GROUP BY md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper.
+*---------------------------------------------------------------ساير
+  SELECT md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper, SUM( md~stock_qty ) AS stock_qty
+      FROM matdoc AS md
+        INTO CORRESPONDING FIELDS OF TABLE @it_sayer
+      WHERE  (
+        ( md~bwart IN (309, 310, 321, 322, 531, 532, 545,
+                       546, 551, 555, 556, 'Z71', 'Z72')
+        )
+        OR
+        (
+        ( md~dmbtr_stock <> 0 )
+        AND
+        md~bwart NOT IN (101, 102, 105, 106, 122, 123, 161, 162, 201,
+                         202, 261, 262, 543, 544, 601, 602, 653, 654,
+                         309, 310, 321, 322, 531, 532, 545, 546, 551,
+                         555, 556, 'Z71', 'Z72')
+        )
+        )
+      AND md~bukrs IN @s_bukrs
+      AND md~werks IN @s_werks
+      AND md~matnr IN @s_matnr
+  GROUP BY md~bukrs, md~werks, md~matnr, md~gjahr, md~gjper.
+
+
+  DATA: fieldname1(30) TYPE c,
+        fieldname2(30) TYPE c,
+        fieldname3(30) TYPE c,
+        fieldname4(30) TYPE c,
+        fieldname5(30) TYPE c,
+        seq            TYPE i.
+
+
+  LOOP AT itab_base INTO wa_base.
+
+    seq = 0.
+
+    LOOP AT itab_period ASSIGNING FIELD-SYMBOL(<b>).
+
+      seq = seq + 1.
+
+*---------------------------------------------------خريد
+
+      fieldname1 = 'KHARID' && seq.
+      ASSIGN COMPONENT fieldname1 OF STRUCTURE wa_base TO FIELD-SYMBOL(<kharid>).
+
+      READ TABLE it_kharid WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr gjahr = <b>-gjahr gjper = <b>-gjper.
+      IF sy-subrc = 0.
+        <kharid> = it_kharid-stock_qty.
+      ENDIF.
+
+*---------------------------------------------------مصرف
+      fieldname2 = 'MASRAF' && seq.
+      ASSIGN COMPONENT fieldname2 OF STRUCTURE wa_base TO FIELD-SYMBOL(<masraf>).
+
+      READ TABLE it_masraf WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr gjahr = <b>-gjahr gjper = <b>-gjper.
+      IF sy-subrc = 0.
+        <masraf> = it_masraf-stock_qty.
+      ENDIF.
+
+*---------------------------------------------------فروش
+      fieldname3 = 'FOROOSH' && seq.
+      ASSIGN COMPONENT fieldname3 OF STRUCTURE wa_base TO FIELD-SYMBOL(<foroosh>).
+
+      READ TABLE it_foroosh WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr gjahr = <b>-gjahr gjper = <b>-gjper.
+      IF sy-subrc = 0.
+        <foroosh> = it_foroosh-stock_qty.
+      ENDIF.
+*---------------------------------------------------ساير
+      fieldname4 = 'SAYER' && seq.
+      ASSIGN COMPONENT fieldname4 OF STRUCTURE wa_base TO FIELD-SYMBOL(<sayer>).
+
+      READ TABLE it_sayer WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr gjahr = <b>-gjahr gjper = <b>-gjper.
+      IF sy-subrc = 0.
+        <sayer> = it_sayer-stock_qty.
+      ENDIF.
+
+*---------------------------------------------------پايان دوره
+      fieldname5 = 'payane_dore' && seq.
+      ASSIGN COMPONENT fieldname5 OF STRUCTURE wa_base TO FIELD-SYMBOL(<payane_dore>).
+
+
+      IF seq = 1.
+        wa_base-payane_dore_var = 0.
+        <payane_dore> = wa_base-avale_dore + <kharid> + <masraf> + <foroosh> + <sayer>.
+        wa_base-payane_dore_var = <payane_dore>.
+      ELSE.
+        <payane_dore> = wa_base-payane_dore_var + <kharid> + <masraf> + <foroosh> + <sayer>.
+        wa_base-payane_dore_var = 0.
+        wa_base-payane_dore_var = <payane_dore>.
+      ENDIF.
+
+*---------------------------------------------------مينيمم پايان دوره ها بين دوره هاي ورودي
+
+      IF seq = 1.
+        CLEAR wa_base-min_payane_dore.
+        wa_base-min_payane_dore = <payane_dore>.
+      ELSE.
+        IF wa_base-min_payane_dore > <payane_dore>. "AND <payane_dore> <> 0 .
+          wa_base-min_payane_dore = <payane_dore>.
+        ELSE.
+        ENDIF.
+      ENDIF.
+
+*----------------------------------------------------محاسبات ستون هاي کل
+
+      wa_base-kharid_dore_total  = wa_base-kharid_dore_total  + <kharid>.
+      wa_base-masraf_dore_total  = wa_base-masraf_dore_total  + <masraf>.
+      wa_base-foroosh_dore_total = wa_base-foroosh_dore_total + <foroosh>.
+      wa_base-sayer_dore_total   = wa_base-sayer_dore_total   + <sayer>.
+
+
+    ENDLOOP.
+
+*---------------------------------------------------درصد مصرف به دردسترس
+
+    IF wa_base-avale_dore + wa_base-kharid_dore_total + wa_base-sayer_dore_total = 0.
+      wa_base-masraf_be_dardastres = 0.
+    ELSE.
+      wa_base-masraf_be_dardastres = ( wa_base-masraf_dore_total + wa_base-foroosh_dore_total ) * 100
+                                     /
+                                     ( wa_base-avale_dore + wa_base-kharid_dore_total + wa_base-sayer_dore_total ).
+    ENDIF.
+
+
+*-----------------------------------------------------------
+    MODIFY itab_base FROM wa_base.
+  ENDLOOP.
+
+
+
+*-----------------------------------------------------------------------------------
+
+  DATA: count TYPE i.
+  DATA: fname1(30) TYPE c.
+  DATA: yearmonth TYPE matdoc-gjper. " ترکيب سال و ماه
+
+
+  LOOP AT itab_base INTO wa_base.
+
+*----------------------------------------------------راکد نوع اول
+
+    IF wa_base-masraf_be_dardastres >= Darsad * ( -1 ) AND wa_base-payane_dore_var > 0 AND wa_base-min_payane_dore > 0.
+      wa_base-type1 = 'راکد درصد مصرف'.
+    ELSE.
+    ENDIF.
+
+*----------------------------------------------------راکد نوع دوم
+
+    IF wa_base-masraf_dore_total > 0 AND wa_base-payane_dore_var > 0 AND wa_base-min_payane_dore > 0.
+      wa_base-type2 = 'راکد برگشت از مصرف'.
+    ELSE.
+    ENDIF.
+
+*----------------------------------------------------راکد نوع سوم
+
+
+*----------------------محاسبه ي مانده ي پايان دوره ي 6 دوره قبل
+
+
+
+    CLEAR yearmonth.
+    count = 1.
+
+
+    fname1 = 'PAYANE_DORE_GH' && count.
+    ASSIGN COMPONENT fname1 OF STRUCTURE wa_base TO FIELD-SYMBOL(<payane_dore_gh>).
+
+    WHILE count <= 6.
+
+      wa_year-poper = wa_year-poper - 1.
+      IF wa_year-poper = '000'.
+        wa_year-poper = '012'.
+        wa_year-gjahr = wa_year-gjahr - 1.
+        CONCATENATE wa_year-gjahr wa_year-poper INTO yearmonth.
+      ELSE.
+        CONCATENATE wa_year-gjahr wa_year-poper INTO yearmonth.
+      ENDIF.
+
+
+      SELECT SINGLE SUM( md~stock_qty )
+          FROM matdoc AS md
+          INTO  @<payane_dore_gh>
+          WHERE
+                md~bukrs = @wa_base-bukrs
+            AND md~werks = @wa_base-werks
+            AND md~matnr = @wa_base-matnr
+            AND md~gjper < @yearmonth
+            AND md~bwart NOT IN (103, 104, 124, 125, 315, 316).
+
+
+      IF  <payane_dore_gh> = wa_base-payane_dore_var AND wa_base-payane_dore_var > 0.
+        IF  count = 6.
+          wa_base-type3 = 'راکد نقطه اي'.
+          count = count + 1.
+        ELSE.
+          count = count + 1.
+        ENDIF.
+      ELSE.
+        count = 7.
+      ENDIF.
+
+
+    ENDWHILE.
+
+    CONCATENATE '0' wa_year-monat INTO wa_year-poper.
+
+
+*---------------------------------------------------
+
+    MODIFY itab_base FROM wa_base.
+
+  ENDLOOP.
+
+
+*---------------------------------------------------حذف رديفهاي اضافي مقدار خالي
+  DELETE itab_base WHERE avale_dore = 0 AND
+  kharid1  = 0 AND masraf1  = 0 AND foroosh1  = 0 AND sayer1  = 0 AND
+  kharid2  = 0 AND masraf2  = 0 AND foroosh2  = 0 AND sayer2  = 0 AND
+  kharid3  = 0 AND masraf3  = 0 AND foroosh3  = 0 AND sayer3  = 0 AND
+  kharid4  = 0 AND masraf4  = 0 AND foroosh4  = 0 AND sayer4  = 0 AND
+  kharid5  = 0 AND masraf5  = 0 AND foroosh5  = 0 AND sayer5  = 0 AND
+  kharid6  = 0 AND masraf6  = 0 AND foroosh6  = 0 AND sayer6  = 0 AND
+  kharid7  = 0 AND masraf7  = 0 AND foroosh7  = 0 AND sayer7  = 0 AND
+  kharid8  = 0 AND masraf8  = 0 AND foroosh8  = 0 AND sayer8  = 0 AND
+  kharid9  = 0 AND masraf9  = 0 AND foroosh9  = 0 AND sayer9  = 0 AND
+  kharid10 = 0 AND masraf10 = 0 AND foroosh10 = 0 AND sayer10 = 0 AND
+  kharid11 = 0 AND masraf11 = 0 AND foroosh11 = 0 AND sayer11 = 0 AND
+  kharid12 = 0 AND masraf12 = 0 AND foroosh12 = 0 AND sayer12 = 0.
+
+
+
+ENDFORM.
+
+
+
+FORM get_data_riali .
+
+*----------------------------------------------------------------------------------گزارش ريالي
+*---------------------------------------------بدست آوردن سال و ماه در "تا تاريخ" براي نرخ انبار
+  TYPES: BEGIN OF stru_fisc_per,
+           budat TYPE matdoc-budat, "posting date
+           gjahr TYPE bkpf-gjahr,   "Fiscal Year
+           monat TYPE bkpf-monat,   "Period
+           poper TYPE t009b-poper,
+         END OF stru_fisc_per.
+
+  DATA: wa_yearh TYPE stru_fisc_per.
+  DATA: wa_bukrsh TYPE t001.
+
+  SELECT SINGLE * INTO wa_bukrsh FROM t001 WHERE bukrs IN s_bukrs.
+
+  CALL FUNCTION 'FI_PERIOD_DETERMINE'
+    EXPORTING
+      i_budat = s_budat-high
+      i_bukrs = wa_bukrsh-bukrs
+    IMPORTING
+      e_gjahr = wa_yearh-gjahr
+      e_monat = wa_yearh-monat
+      e_poper = wa_yearh-poper.
+
+*------------------------------------------------------------------نرخ انبار در تا تاريخ
+
+  SELECT DISTINCT tk~bukrs, tw~werks, mh~matnr, mh~lfgja AS gjahr, mh~lfmon, mh~verpr, mh~stprs
+    FROM mbewh AS mh
+    LEFT JOIN t001w AS tw ON tw~bwkey EQ mh~bwkey
+    LEFT JOIN t001k AS tk ON tk~bwkey EQ tw~bwkey
+    INTO CORRESPONDING FIELDS OF TABLE @it_nerkh
+    WHERE  mh~matnr IN @s_matnr
+        AND werks   IN @s_werks
+        AND bukrs   IN @s_bukrs
+        AND mh~lfgja = @wa_yearh-gjahr
+        AND mh~lfmon = @wa_yearh-monat.
+
+
+  LOOP AT itab_base ASSIGNING FIELD-SYMBOL(<g>). "WHERE type1 IS NOT INITIAL OR type2 IS NOT INITIAL OR type3 IS NOT INITIAL.
+
+
+    READ TABLE it_nerkh WITH KEY bukrs = <g>-bukrs werks = <g>-werks matnr = <g>-matnr.
+    IF sy-subrc = 0.
+      <g>-inv_Vnerkh_tatarikh = it_nerkh-verpr.
+      <g>-inv_Snerkh_tatarikh = it_nerkh-stprs.
+    ENDIF.
+
+  ENDLOOP.
+
+*-----------------------------------------------------و پاک کردن رديف هاي اضافي ZMIR5m فراخواني
+
+  DATA : it TYPE STANDARD TABLE OF zfi_zmir5i_str.
+  DATA : it2 TYPE STANDARD TABLE OF zfi_zmir5i_str.
+  DATA : wa_bukrs TYPE t001.
+
+  SELECT * INTO wa_bukrs FROM t001
+    WHERE bukrs IN s_bukrs.
+
+    CLEAR it[].
+    CALL FUNCTION 'GET_ZMIR5M_DATA'
+      EXPORTING
+        bukrs  = wa_bukrs-bukrs
+        budat  = s_budat-high
+*       EBELN  =
+*       matnr  =
+*       WERKS  =
+*       BESKZ  =
+*       SOBSL  =
+      TABLES
+        itdata = it.
+
+    APPEND LINES OF it TO it2.
+
+  ENDSELECT.
+
+  FREE it.
+
+  DATA: it3 TYPE STANDARD TABLE OF zfi_zmir5i_str.
+  DATA: wa_it3 TYPE zfi_zmir5i_str.
+
+  SORT it2 BY matnr bukrs budat DESCENDING.
+  it3[] = it2[].
+
+  DELETE it3 WHERE budat NOT IN s_budat.
+
+
+
+*----------------------------براي نرخ ميانگين فاکتور
+
+  SELECT bukrs, werks, matnr, SUM( dmbtr + invoied_amount + subs_deb_log_iv_per ) AS inv_sum_amount,
+         SUM( inv_menge ) AS inv_sum_Qty
+        FROM @it3 AS it3
+    GROUP BY bukrs, werks, matnr
+    INTO CORRESPONDING FIELDS OF TABLE @it_fak.
+
+  DELETE it3 WHERE inv_menge < 0.
+
+
+  DATA: inv_last2            TYPE mbew-verpr,
+        inv_mid2             TYPE mbew-verpr,
+        inv_Snerkh_tatarikh2 TYPE mbew-verpr,
+        inv_Vnerkh_tatarikh2 TYPE mbew-verpr,
+        stprs2               TYPE mbew-verpr,
+        verpr2               TYPE mbew-verpr.
+
+
+*  LOOP AT itab_base ASSIGNING FIELD-SYMBOL(<j>)." WHERE type1 IS NOT INITIAL OR type2 IS NOT INITIAL OR type3 IS NOT INITIAL.
+  LOOP AT itab_base INTO wa_base.
+*---------------------------------------------------نرخ ميانگين فاکتور
+
+    READ TABLE it_fak WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr.
+    IF sy-subrc = 0.
+
+      IF it_fak-inv_sum_Qty IS NOT INITIAL.
+        wa_base-inv_mid = it_fak-inv_sum_amount / it_fak-inv_sum_Qty.
+      ELSE.
+      ENDIF.
+    ENDIF.
+
+*---------------------------------------------------نرخ آخرين فاکتور
+
+    "DELETE it3 WHERE bukrs = <j>-bukrs AND werks = <j>-werks AND matnr = <j>-matnr AND inv_menge < 0.
+    "IF sy-subrc = 0.
+    READ TABLE it2 INTO wa_it3 WITH KEY bukrs = wa_base-bukrs werks = wa_base-werks matnr = wa_base-matnr.
+    IF sy-subrc = 0.
+      wa_base-inv_last = wa_it3-zmirrate_irr.
+    ENDIF.
+    "ENDIF.
+
+
+*---------------------------------------------------کمترين نرخ غير صفر
+    CLEAR inv_last2.
+    CLEAR inv_mid2.
+    CLEAR inv_Snerkh_tatarikh2.
+    CLEAR inv_Vnerkh_tatarikh2.
+    CLEAR stprs2.
+    CLEAR verpr2.
+
+    IF wa_base-inv_mid = 0.
+      inv_mid2 = 999999999.
+    ELSE.
+      inv_mid2 = wa_base-inv_mid.
+    ENDIF.
+    IF wa_base-inv_last = 0.
+      inv_last2 = 999999999.
+    ELSE.
+      inv_last2 = wa_base-inv_last.
+    ENDIF.
+    IF wa_base-inv_Snerkh_tatarikh = 0.
+      inv_Snerkh_tatarikh2 = 999999999.
+    ELSE.
+      inv_Snerkh_tatarikh2 = wa_base-inv_Snerkh_tatarikh.
+    ENDIF.
+    IF wa_base-inv_Vnerkh_tatarikh = 0.
+      inv_Vnerkh_tatarikh2 = 999999999.
+    ELSE.
+      inv_Vnerkh_tatarikh2 = wa_base-inv_Vnerkh_tatarikh.
+    ENDIF.
+    IF wa_base-stprs = 0.
+      stprs2 = 999999999.
+    ELSE.
+      stprs2 = wa_base-stprs.
+    ENDIF.
+    IF wa_base-verpr = 0.
+      verpr2 = 999999999.
+    ELSE.
+      verpr2 = wa_base-verpr.
+    ENDIF.
+
+    wa_base-nerkh_min = nmin( val1 = inv_last2
+                          val2 = inv_mid2
+                          val3 = inv_Snerkh_tatarikh2
+                          val4 = inv_Vnerkh_tatarikh2
+                          val5 = stprs2
+                          val6 = verpr2 ) .
+
+    IF wa_base-nerkh_min = 999999999.
+      wa_base-nerkh_min = 0.
+    ENDIF.
+
+
+
+
+*    <g>-nerkh_min = <g>-inv_last.
+*    IF <g>-inv_mid < <g>-nerkh_min AND <g>-inv_mid <> 0.
+*      <g>-nerkh_min = <g>-inv_mid .
+*    ELSEIF <g>-inv_Vnerkh_tatarikh < <g>-nerkh_min AND <g>-inv_Vnerkh_tatarikh  <> 0.
+*      <g>-nerkh_min = <g>-inv_Vnerkh_tatarikh.
+*    ELSEIF <g>-inv_Snerkh_tatarikh < <g>-nerkh_min AND <g>-inv_Snerkh_tatarikh <> 0.
+*      <g>-nerkh_min = <g>-inv_Snerkh_tatarikh.
+*    ELSEIF <g>-stprs < <g>-nerkh_min AND <g>-stprs <> 0.
+*      <g>-nerkh_min = <g>-inv_Snerkh_tatarikh.
+*    ELSEIF <g>-verpr < <g>-nerkh_min AND <g>-verpr <> 0.
+*      <g>-nerkh_min = <g>-verpr.
+*    ENDIF.
+
+
+    MODIFY itab_base FROM wa_base.
+  ENDLOOP.
+
+ENDFORM.
+
+
+
+FORM get_SL .
+
+*-----------------------------------------------------------------------------مرجوعي
+  CLEAR it_marj.
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS marjooe
+      FROM matdoc AS md
+    LEFT JOIN t001l AS tl ON tl~werks EQ md~werks AND tl~lgort EQ md~lgort_sid
+        INTO CORRESPONDING FIELDS OF TABLE @it_marj
+      WHERE "md~budat <= @s_budat-high
+            md~bukrs IN @s_bukrs
+        AND md~werks IN @s_werks
+        AND md~matnr IN @s_matnr
+        AND tl~lgobe LIKE 'Returned%'
+        AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+      GROUP BY md~bukrs, md~werks, md~matnr.
+
+
+  LOOP AT itab_base ASSIGNING FIELD-SYMBOL(<p>).
+    READ TABLE it_marj WITH KEY bukrs = <p>-bukrs werks = <p>-werks matnr = <p>-matnr.
+    IF sy-subrc = 0.
+      <p>-marjooe = it_marj-marjooe.
+    ENDIF.
+  ENDLOOP.
+
+*-----------------------------------------------------------------------------بازبيني
+  CLEAR it_bazb.
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS bazbini
+      FROM matdoc AS md
+    LEFT JOIN t001l AS tl ON tl~werks EQ md~werks AND tl~lgort EQ md~lgort_sid
+        INTO CORRESPONDING FIELDS OF TABLE @it_bazb
+      WHERE "md~budat <= @s_budat-high
+            md~bukrs IN @s_bukrs
+        AND md~werks IN @s_werks
+        AND md~matnr IN @s_matnr
+        AND tl~lgobe LIKE '%Rev%'
+        AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+      GROUP BY md~bukrs, md~werks, md~matnr.
+
+  LOOP AT itab_base ASSIGNING <p>.
+    READ TABLE it_bazb WITH KEY bukrs = <p>-bukrs werks = <p>-werks matnr = <p>-matnr.
+    IF sy-subrc = 0.
+      <p>-bazbini = it_bazb-bazbini.
+    ENDIF.
+  ENDLOOP.
+*-----------------------------------------------------------------------------راکد
+  CLEAR it_rak.
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS raked
+       FROM matdoc AS md
+     LEFT JOIN t001l AS tl ON tl~werks EQ md~werks AND tl~lgort EQ md~lgort_sid
+         INTO CORRESPONDING FIELDS OF TABLE @it_rak
+       WHERE "md~budat <= @s_budat-high
+             md~bukrs IN @s_bukrs
+         AND md~werks IN @s_werks
+         AND md~matnr IN @s_matnr
+         AND tl~lgobe LIKE 'Pend%'
+         AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+       GROUP BY md~bukrs, md~werks, md~matnr.
+
+  LOOP AT itab_base ASSIGNING <p>.
+    READ TABLE it_rak WITH KEY bukrs = <p>-bukrs werks = <p>-werks matnr = <p>-matnr.
+    IF sy-subrc = 0.
+      <p>-raked = it_rak-raked.
+    ENDIF.
+  ENDLOOP.
+
+*-----------------------------------------------------------------------------پيمانکاري
+  CLEAR it_sup.
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS sup
+       FROM matdoc AS md
+         INTO CORRESPONDING FIELDS OF TABLE @it_sup
+       WHERE "md~budat <= @s_budat-high
+             md~bukrs IN @s_bukrs
+         AND md~werks IN @s_werks
+         AND md~matnr IN @s_matnr
+         AND md~sobkz = 'O'
+         AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+       GROUP BY md~bukrs, md~werks, md~matnr.
+
+  LOOP AT itab_base ASSIGNING <p>.
+    READ TABLE it_sup WITH KEY bukrs = <p>-bukrs werks = <p>-werks matnr = <p>-matnr.
+    IF sy-subrc = 0.
+      <p>-sup = it_sup-sup.
+    ENDIF.
+  ENDLOOP.
+
+*-----------------------------------------------------------------------------بلاک
+  CLEAR it_block.
+  SELECT md~bukrs, md~werks, md~matnr, SUM( md~stock_qty ) AS block
+       FROM matdoc AS md
+         LEFT JOIN t001l AS tl ON tl~werks EQ md~werks AND tl~lgort EQ md~lgort_sid
+         INTO CORRESPONDING FIELDS OF TABLE @it_block
+       WHERE "md~budat <= @s_budat-high
+             md~bukrs IN @s_bukrs
+         AND md~werks IN @s_werks
+         AND md~matnr IN @s_matnr
+         AND md~lbbsa_sid = '07'
+         AND md~bwart NOT IN ( '103', '104', '124', '125', '315', '316' )
+         AND md~sobkz <> 'O'
+         AND tl~lgobe NOT LIKE 'Pend%'
+         AND tl~lgobe NOT LIKE '%Rev%'
+         AND tl~lgobe NOT LIKE 'Returned%'
+       GROUP BY md~bukrs, md~werks, md~matnr.
+
+  LOOP AT itab_base ASSIGNING <p>.
+    READ TABLE it_block WITH KEY bukrs = <p>-bukrs werks = <p>-werks matnr = <p>-matnr.
+    IF sy-subrc = 0.
+      <p>-block = it_block-block.
+    ENDIF.
+  ENDLOOP.
+
+*-----------------------------------------------------------------------------مقدار راکد
+  LOOP AT itab_base INTO wa_base.
+
+    wa_base-raked_qty = wa_base-min_payane_dore - wa_base-marjooe - wa_base-bazbini - wa_base-raked - wa_base-sup - wa_base-block.
+    IF wa_base-raked_qty < 0.
+      wa_base-raked_qty = 0.
+    ENDIF.
+
+*-----------------------------------------------------------------------------مبلغ راکد
+
+    wa_base-amount = wa_base-nerkh_min * wa_base-raked_qty.
+
+    MODIFY itab_base FROM wa_base.
+  ENDLOOP.
+
+ENDFORM.

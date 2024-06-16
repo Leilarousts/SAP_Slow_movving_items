@@ -1,0 +1,20 @@
+report zco_raked.
+
+
+include zco_head.
+include zco_main_body.
+include zco_alv.
+
+
+start-of-selection.
+  perform get_data.
+  perform get_data_riali.
+  perform get_SL.
+  itab_base_org[] = itab_base[].
+
+
+
+end-of-selection.
+  perform create_fieldcat2 using gt_fieldcat[].
+  perform build_layout2    using gs_layout.
+  perform display2.

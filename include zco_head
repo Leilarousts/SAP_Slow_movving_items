@@ -1,0 +1,212 @@
+*&---------------------------------------------------------------------*
+*& Include          ZCO_HEAD
+*&---------------------------------------------------------------------*
+TABLES: matdoc, makt, mara, mbew, t001w, marc, t001k, mbewh,t001.
+
+
+TYPES: BEGIN OF stru_base,
+         bukrs                TYPE matdoc-bukrs,         "Company Code
+         werks                TYPE matdoc-werks,         "Plant
+         bwkey                TYPE t001w-bwkey,          "Valuation Area
+         matnr                TYPE matdoc-matnr,         "material number
+         zmaktx_fa            TYPE mara-zmaktx_fa,       "Persian Desc
+         meins                TYPE mara-meins,           "UOM
+         avale_dore           TYPE matdoc-dmbtr_stock,
+         waers                TYPE matdoc-waers,         "currency
+         kharid1              TYPE matdoc-dmbtr_stock,
+         masraf1              TYPE matdoc-dmbtr_stock,
+         foroosh1             TYPE matdoc-dmbtr_stock,
+         sayer1               TYPE matdoc-dmbtr_stock,
+         payane_dore1         TYPE matdoc-dmbtr_stock,
+         kharid2              TYPE matdoc-dmbtr_stock,
+         masraf2              TYPE matdoc-dmbtr_stock,
+         foroosh2             TYPE matdoc-dmbtr_stock,
+         sayer2               TYPE matdoc-dmbtr_stock,
+         payane_dore2         TYPE matdoc-dmbtr_stock,
+         kharid3              TYPE matdoc-dmbtr_stock,
+         masraf3              TYPE matdoc-dmbtr_stock,
+         foroosh3             TYPE matdoc-dmbtr_stock,
+         sayer3               TYPE matdoc-dmbtr_stock,
+         payane_dore3         TYPE matdoc-dmbtr_stock,
+         kharid4              TYPE matdoc-dmbtr_stock,
+         masraf4              TYPE matdoc-dmbtr_stock,
+         foroosh4             TYPE matdoc-dmbtr_stock,
+         sayer4               TYPE matdoc-dmbtr_stock,
+         payane_dore4         TYPE matdoc-dmbtr_stock,
+         kharid5              TYPE matdoc-dmbtr_stock,
+         masraf5              TYPE matdoc-dmbtr_stock,
+         foroosh5             TYPE matdoc-dmbtr_stock,
+         sayer5               TYPE matdoc-dmbtr_stock,
+         payane_dore5         TYPE matdoc-dmbtr_stock,
+         kharid6              TYPE matdoc-dmbtr_stock,
+         masraf6              TYPE matdoc-dmbtr_stock,
+         foroosh6             TYPE matdoc-dmbtr_stock,
+         sayer6               TYPE matdoc-dmbtr_stock,
+         payane_dore6         TYPE matdoc-dmbtr_stock,
+         kharid7              TYPE matdoc-dmbtr_stock,
+         masraf7              TYPE matdoc-dmbtr_stock,
+         foroosh7             TYPE matdoc-dmbtr_stock,
+         sayer7               TYPE matdoc-dmbtr_stock,
+         payane_dore7         TYPE matdoc-dmbtr_stock,
+         kharid8              TYPE matdoc-dmbtr_stock,
+         masraf8              TYPE matdoc-dmbtr_stock,
+         foroosh8             TYPE matdoc-dmbtr_stock,
+         sayer8               TYPE matdoc-dmbtr_stock,
+         payane_dore8         TYPE matdoc-dmbtr_stock,
+         kharid9              TYPE matdoc-dmbtr_stock,
+         masraf9              TYPE matdoc-dmbtr_stock,
+         foroosh9             TYPE matdoc-dmbtr_stock,
+         sayer9               TYPE matdoc-dmbtr_stock,
+         payane_dore9         TYPE matdoc-dmbtr_stock,
+         kharid10             TYPE matdoc-dmbtr_stock,
+         masraf10             TYPE matdoc-dmbtr_stock,
+         foroosh10            TYPE matdoc-dmbtr_stock,
+         sayer10              TYPE matdoc-dmbtr_stock,
+         payane_dore10        TYPE matdoc-dmbtr_stock,
+         kharid11             TYPE matdoc-dmbtr_stock,
+         masraf11             TYPE matdoc-dmbtr_stock,
+         foroosh11            TYPE matdoc-dmbtr_stock,
+         sayer11              TYPE matdoc-dmbtr_stock,
+         payane_dore11        TYPE matdoc-dmbtr_stock,
+         kharid12             TYPE matdoc-dmbtr_stock,
+         masraf12             TYPE matdoc-dmbtr_stock,
+         foroosh12            TYPE matdoc-dmbtr_stock,
+         sayer12              TYPE matdoc-dmbtr_stock,
+         payane_dore12        TYPE matdoc-dmbtr_stock,
+         payane_dore_var      TYPE matdoc-dmbtr_stock,
+         min_payane_dore      TYPE matdoc-dmbtr_stock,
+         marjooe              TYPE matdoc-stock_qty,    "مرجوعي
+         bazbini              TYPE matdoc-stock_qty,    "بازبيني
+         raked                TYPE matdoc-stock_qty,    "راکد
+         sup                  TYPE matdoc-stock_qty,    " اماني
+         block                TYPE matdoc-stock_qty,    " بلاک
+         kharid_dore_total    TYPE matdoc-dmbtr_stock,
+         masraf_dore_total    TYPE matdoc-dmbtr_stock,
+         foroosh_dore_total   TYPE matdoc-dmbtr_stock,
+         sayer_dore_total     TYPE matdoc-dmbtr_stock,
+         masraf_be_dardastres TYPE p DECIMALS 2,
+         Type1(40)            TYPE c,                     "راکد نوع اول
+         Type2(40)            TYPE c,                     "راکد نوع دوم
+         Type3(40)            TYPE c,                     "راکد نوع سوم
+         verpr                TYPE mbew-verpr,            "Moving price
+         inv_Vnerkh_tatarikh  TYPE mbewh-verpr,           "Moving price
+         stprs                TYPE mbew-stprs,            "Standard price
+         inv_Snerkh_tatarikh  TYPE mbewh-stprs,           "Standard price
+         inv_last             TYPE mbew-stprs,            "آخرين فاکتور
+         inv_mid              TYPE mbew-stprs,            "ميانگين نرخ فاکتورها
+         raked_qty            TYPE matdoc-stock_qty,      "مقدار راکد
+         nerkh_min            TYPE mbew-stprs,            "حداقل نرخ
+         amount               TYPE matdoc-dmbtr_stock,  "مبلغ اقل موجودي
+         payane_dore_gh1      TYPE matdoc-stock_qty,    "مانده پايان دوره 1 ماه قبل
+         payane_dore_gh2      TYPE matdoc-stock_qty,    "مانده پايان دوره 2 ماه قبل
+         payane_dore_gh3      TYPE matdoc-stock_qty,    "مانده پايان دوره 3 ماه قبل
+         payane_dore_gh4      TYPE matdoc-stock_qty,    "مانده پايان دوره 4 ماه قبل
+         payane_dore_gh5      TYPE matdoc-stock_qty,    "مانده پايان دوره 5 ماه قبل
+         payane_dore_gh6      TYPE matdoc-stock_qty,    "مانده پايان دوره 6 ماه قبل
+         lgort_sid            TYPE matdoc-lgort_sid,    " Storage Location
+         bklas                TYPE mbew-bklas,           "Valuation Class
+         mtart                TYPE mara-mtart,           "Material Type
+         vprsv                TYPE mbew-vprsv,           "Price control
+         beskz                TYPE marc-beskz,           "Procurement Type
+         sobsl                TYPE marc-sobsl,           "Special Procurement
+         maktx                TYPE makt-maktx,          "Item Desc
+       END OF stru_base.
+
+DATA: itab_base TYPE TABLE OF stru_base
+      WITH HEADER LINE.
+DATA:wa_base TYPE stru_base.
+
+DATA: itab_base_org TYPE TABLE OF stru_base
+      WITH HEADER LINE.
+DATA raked_flg type abap_boolean.
+
+TYPES: BEGIN OF stru_period,
+         gjahr TYPE matdoc-gjahr,    "Fiscal Year
+         gjper TYPE matdoc-gjper,   "Period/Year
+         gjper_conv(8) TYPE c,
+       END OF stru_period.
+
+DATA: itab_period TYPE TABLE OF stru_period,
+      wa_period TYPE stru_period.
+
+
+
+
+TYPES : BEGIN OF ty_values,
+          bukrs          TYPE matdoc-bukrs,
+          werks          TYPE matdoc-werks,
+          matnr          TYPE matdoc-matnr,
+          gjahr          TYPE matdoc-gjahr,
+          gjper          TYPE matdoc-gjper,
+          lfmon          TYPE mbewh-lfmon,
+          verpr          TYPE mbewh-verpr,
+          stprs          TYPE mbewh-stprs,
+          stock_qty      TYPE matdoc-stock_qty,
+          inv_sum_amount TYPE zfi_zmir5i_str-invoied_amount,
+          inv_sum_Qty    TYPE zfi_zmir5i_str-inv_menge,
+          marjooe        TYPE matdoc-stock_qty,    "مرجوعي
+          bazbini        TYPE matdoc-stock_qty,    "بازبيني
+          raked          TYPE matdoc-stock_qty,    "راکد
+          sup            TYPE matdoc-stock_qty,    "اماني
+          block          TYPE matdoc-stock_qty,    "بلاک
+        END OF ty_values.
+
+DATA it_avale_do TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_kharid TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr gjahr gjper
+      WITH HEADER LINE.
+DATA it_masraf TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr gjahr gjper
+      WITH HEADER LINE.
+DATA it_foroosh TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr gjahr gjper
+      WITH HEADER LINE.
+DATA it_sayer TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr gjahr gjper
+      WITH HEADER LINE.
+DATA it_nerkh TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_fak TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_marj TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_bazb TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_rak TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_sup TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+DATA it_block TYPE SORTED TABLE OF ty_values
+      WITH UNIQUE KEY bukrs werks matnr
+      WITH HEADER LINE.
+*----------------ALV
+DATA: gt_fieldcat TYPE slis_t_fieldcat_alv,
+      gv_lines    TYPE i,
+      gs_layout   TYPE slis_layout_alv.
+*------------------
+
+
+SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+  SELECTION-SCREEN SKIP 1.
+  SELECT-OPTIONS: s_bukrs  FOR t001-bukrs OBLIGATORY,
+                  s_werks  FOR matdoc-werks,
+                  s_matnr  FOR matdoc-matnr,
+                  s_MTART  FOR mara-mtart NO INTERVALS,
+                  s_beskz  FOR marc-beskz NO INTERVALS." DEFAULT 'F'.
+*                 s_lgort  FOR matdoc-lgort,
+  SELECTION-SCREEN SKIP 1.
+  SELECT-OPTIONS: s_budat  FOR matdoc-budat OBLIGATORY.
+  SELECTION-SCREEN SKIP 1.
+  PARAMETERS: darsad TYPE numc2 DEFAULT 10 OBLIGATORY.
+  SELECTION-SCREEN SKIP 1.
+*  PARAMETERS:only_rak AS CHECKBOX.
+
+SELECTION-SCREEN END OF BLOCK b1.

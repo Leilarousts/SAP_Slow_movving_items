@@ -1,0 +1,346 @@
+*&---------------------------------------------------------------------*
+*& Include          ZCO_ALV
+*&---------------------------------------------------------------------*
+FORM create_fieldcat2  USING it_fieldcat TYPE slis_t_fieldcat_alv.
+  BREAK harounib.
+  DATA wfcat TYPE slis_fieldcat_alv.
+  DATA: lr_data     TYPE REF TO data,
+        lr_tabdescr TYPE REF TO cl_abap_structdescr,
+        lt_dfies    TYPE ddfields,
+        ls_dfies    TYPE dfies.
+  DATA: seq_i    TYPE i,
+        seq_c(2) TYPE c.
+
+  CREATE DATA lr_data LIKE LINE OF itab_base .
+  lr_tabdescr ?= cl_abap_structdescr=>describe_by_data_ref( lr_data ).
+  lt_dfies = cl_salv_data_descr=>read_structdescr( lr_tabdescr ).
+
+  LOOP AT lt_dfies INTO ls_dfies .
+    CLEAR wfcat.
+    MOVE-CORRESPONDING ls_dfies TO wfcat .
+    wfcat-no_out = 'X'.
+    CASE wfcat-fieldname.
+      WHEN 'BUKRS'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'شرکت'.
+*        wfcat-cfieldname = ''.
+*        wfcat-qfieldname = ''.
+      WHEN 'WERKS'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'پلنت'.
+      WHEN 'MATNR'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کالا'.
+      WHEN 'WERKS'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'پلنت'.
+      WHEN 'MATNR'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کالا'.
+      WHEN 'MAKTX'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'شرح کالا'.
+      WHEN 'ZMAKTX_FA'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'شرح فارسي'.
+      WHEN 'MEINS'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'واحد'.
+      WHEN 'BKLAS'.
+        wfcat-no_out = ''.
+*        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'BKLAS'.
+      WHEN 'MTART'.
+        wfcat-no_out = ''.
+*        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'MTART'.
+      WHEN 'VPRSV'.
+        wfcat-no_out = ''.
+*        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'VPRSV'.
+      WHEN 'BESKZ'.
+        wfcat-no_out = ''.
+*        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'BESKZ'.
+      WHEN 'SOBSL'.
+        wfcat-no_out = ''.
+*        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'SOBSL'.
+      WHEN 'AVALE_DORE'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'اول دوره'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'KHARID_DORE_TOTAL'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کل خريد دوره'.
+        wfcat-emphasize = 'C310'.
+      WHEN 'MASRAF_DORE_TOTAL'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کل مصرف دوره'.
+        wfcat-emphasize = 'C310'.
+      WHEN 'FOROOSH_DORE_TOTAL'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کل فروش دوره'.
+        wfcat-emphasize = 'C310'.
+      WHEN 'SAYER_DORE_TOTAL'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کل ساير'.
+        wfcat-emphasize = 'C310'.
+        " wfcat-cfieldname = 'WAERS'.
+      WHEN 'MASRAF_BE_DARDASTRES'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'نسبت مصرف به دردسترس'.
+      WHEN 'TYPE1'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'راکد نوع اول'.
+        wfcat-emphasize = 'C700'.
+      WHEN 'TYPE2'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'راکد نوع دوم'.
+        wfcat-emphasize = 'C700'.
+      WHEN 'TYPE3'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'راکد نوع سوم'.
+        wfcat-emphasize = 'C700'.
+      WHEN 'VERPR'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'نرخ ميانگين جاري'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'INV_VNERKH_TATARIKH'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'نرخ ميانگين در تاتاريخ'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'STPRS'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'نرخ استاندارد جاري'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'INV_SNERKH_TATARIKH'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'نرخ استاندارد در تاتاريخ'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'INV_LAST'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'آخرين فاکتور'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'INV_MID'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'ميانگين فاکتورها'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C710'.
+      WHEN 'MIN_PAYANE_DORE'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'Min Qty پايان'.
+        "wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C110'.
+      WHEN 'NERKH_MIN'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'کمترين نرخ'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C410'.
+      WHEN 'AMOUNT'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'مبلغ راکد'.
+        wfcat-cfieldname = 'WAERS'.
+        wfcat-emphasize = 'C410'.
+
+      WHEN 'MARJOOE'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'مرجوعي'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C510'.
+
+      WHEN 'BAZBINI'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'بازبيني'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C510'.
+
+      WHEN 'RAKED'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'راکد'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C510'.
+
+      WHEN 'SUP'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'اماني'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C510'.
+
+      WHEN 'BLOCK'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'بلاک'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C510'.
+
+      WHEN 'RAKED_QTY'.
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = 'مقدار راکد'.
+        wfcat-qfieldname = 'MEINS'.
+        wfcat-emphasize = 'C410'.
+    ENDCASE.
+
+    "BREAK harounib.
+
+    "------------------------special fields *******************************
+    IF wfcat-fieldname(6) = 'KHARID' AND wfcat-fieldname <> 'KHARID_DORE_TOTAL'.
+      seq_c = wfcat-fieldname+6(2).
+      seq_i = seq_c.
+      IF seq_i <= lines( itab_period ).
+        wfcat-no_out = ''.
+        CLEAR wa_period.
+        READ TABLE itab_period INTO wa_period INDEX seq_i.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = wa_period-gjper_conv && '-' && 'خريد'.
+        wfcat-emphasize = 'C310'.
+      ENDIF.
+    ENDIF.
+
+    IF wfcat-fieldname(6) = 'MASRAF' AND wfcat-fieldname <> 'MASRAF_DORE_TOTAL' AND wfcat-fieldname <> 'MASRAF_BE_DARDASTRES'.
+      seq_c = wfcat-fieldname+6(2).
+      seq_i = seq_c.
+      IF seq_i <= lines( itab_period ).
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = wa_period-gjper_conv && '-' && 'مصرف'.
+        wfcat-emphasize = 'C300'.
+      ENDIF.
+    ENDIF.
+
+    IF wfcat-fieldname(7) = 'FOROOSH' AND wfcat-fieldname <> 'FOROOSH_DORE_TOTAL'.
+      seq_c = wfcat-fieldname+7(2).
+      seq_i = seq_c.
+      IF seq_i <= lines( itab_period ).
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = wa_period-gjper_conv && '-' && 'فروش'.
+        wfcat-emphasize = 'C410'.
+      ENDIF.
+    ENDIF.
+
+    IF wfcat-fieldname(5) = 'SAYER' AND wfcat-fieldname <> 'SAYER_DORE_TOTAL'.
+      seq_c = wfcat-fieldname+5(2).
+      seq_i = seq_c.
+      IF seq_i <= lines( itab_period ).
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = wa_period-gjper_conv && '-' &&  'ساير'.
+        wfcat-emphasize = 'C510'.
+      ENDIF.
+    ENDIF.
+
+    IF wfcat-fieldname(11) = 'PAYANE_DORE' AND wfcat-fieldname(14) <> 'PAYANE_DORE_GH' AND wfcat-fieldname <> 'PAYANE_DORE_VAR'.
+      seq_c = wfcat-fieldname+11(2).
+      seq_i = seq_c.
+      IF seq_i <= lines( itab_period ).
+        wfcat-no_out = ''.
+        wfcat-seltext_s = wfcat-seltext_m = wfcat-seltext_l = wfcat-reptext_ddic = wa_period-gjper_conv && '-' && 'پايان دوره'.
+        wfcat-emphasize = 'C610'.
+      ENDIF.
+    ENDIF.
+
+
+
+
+    APPEND  wfcat TO gt_fieldcat .
+  ENDLOOP.
+
+ENDFORM.
+
+
+
+FORM build_layout2  USING   p_gs_layout TYPE slis_layout_alv.
+
+  p_gs_layout-zebra = 'X'.                   " خروجي راه راه باشد.
+  p_gs_layout-colwidth_optimize = 'X'.       "سايز ستونها
+
+ENDFORM.
+
+
+FORM display2 .
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+*     I_INTERFACE_CHECK        = ' '
+*     I_BYPASSING_BUFFER       = ' '
+*     I_BUFFER_ACTIVE          = ' '
+      i_callback_program       = sy-repid
+      i_callback_pf_status_set = 'MENU'
+      i_callback_user_command  = 'USER_COMMAND'
+*     I_CALLBACK_TOP_OF_PAGE   = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*     I_STRUCTURE_NAME         =
+*     I_BACKGROUND_ID          = ' '
+*     I_GRID_TITLE             =
+*     I_GRID_SETTINGS          =
+      is_layout                = gs_layout
+      it_fieldcat              = gt_fieldcat[]
+*     IT_EXCLUDING             =
+*     IT_SPECIAL_GROUPS        =
+*     IT_SORT                  =
+*     IT_FILTER                =
+*     IS_SEL_HIDE              =
+*     I_DEFAULT                = 'X'
+*     I_SAVE                   = ' '
+*     IS_VARIANT               =
+*     IT_EVENTS                =
+*     IT_EVENT_EXIT            =
+*     IS_PRINT                 =
+*     IS_REPREP_ID             =
+*     I_SCREEN_START_COLUMN    = 0
+*     I_SCREEN_START_LINE      = 0
+*     I_SCREEN_END_COLUMN      = 0
+*     I_SCREEN_END_LINE        = 0
+*     I_HTML_HEIGHT_TOP        = 0
+*     I_HTML_HEIGHT_END        = 0
+*     IT_ALV_GRAPHICS          =
+*     IT_HYPERLINK             =
+*     IT_ADD_FIELDCAT          =
+*     IT_EXCEPT_QINFO          =
+*     IR_SALV_FULLSCREEN_ADAPTER        =
+* IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER  =
+*     ES_EXIT_CAUSED_BY_USER   =
+    TABLES
+      t_outtab                 = itab_base
+    EXCEPTIONS
+      program_error            = 1
+      OTHERS                   = 2.
+  IF sy-subrc <> 0.
+* IMPLEMENT SUITABLE ERROR HANDLING HERE
+  ENDIF.
+
+ENDFORM.
+
+
+FORM menu USING rt_extab TYPE slis_t_extab.
+  SET PF-STATUS 'STSUPDPP'.
+ENDFORM.
+
+FORM user_command USING pu_ucomm LIKE sy-ucomm
+  pu_selfield TYPE slis_selfield.
+  CASE pu_ucomm.
+    WHEN 'BACK' OR 'CENCEL'.
+      SET SCREEN 0.
+    WHEN 'FLT'.
+      IF raked_flg = abap_false.
+        itab_base[] = itab_base_org[].
+        DELETE itab_base WHERE type1 IS INITIAL AND type2 IS INITIAL AND type3 IS INITIAL.
+        pu_selfield-refresh = 'X'.
+        raked_flg = abap_true.
+      ELSE.
+        itab_base[] = itab_base_org[].
+        pu_selfield-refresh = 'X'.
+        raked_flg = abap_false.
+      ENDIF.
+  ENDCASE.
+ENDFORM.
+
+
+FORM change_period.
+  DATA output(4) type c.
+  LOOP AT itab_period ASSIGNING FIELD-SYMBOL(<p>).
+    CALL FUNCTION 'CONVERSION_EXIT_GJAHR_OUTPUT'
+      EXPORTING
+        input  = <p>-gjahr
+      IMPORTING
+        output = output.
+    <p>-gjper_conv = output && '-' && <p>-gjper+5(2).
+  ENDLOOP.
+ENDFORM.
